@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@100;300;400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold-light: #f5e4b0;
+    --gold-dim: #b8963e;
+    --bg: #0b0918;
+    --tor-base: #0c1f14;
+    --tor-glow: #1a5c3a;
+    --tor-accent: #6aab7a;
+    --text-main: #e8f0e0;
+    --text-muted: #8aaa8a;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: 'Cormorant Garamond', serif;
+    overflow-x: hidden;
+  }
+
+  #starfield {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem 4rem;
+    gap: 1.5rem;
+  }
+
+  .date-label {
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  .card {
+    position: relative;
+    border-radius: 24px;
+    padding: 3.5rem 3rem;
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.35s cubic-bezier(.22,.68,0,1.2), box-shadow 0.35s ease;
+    background: radial-gradient(ellipse at 35% 25%, var(--tor-glow) 0%, var(--tor-base) 55%, #060f09 100%);
+    box-shadow: 0 8px 48px rgba(26, 92, 58, 0.6), 0 0 0 1px rgba(106, 171, 122, 0.2);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 1.5px;
+    background: linear-gradient(135deg, var(--tor-accent), transparent 50%, var(--gold-dim));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .card-deco {
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    opacity: 0.1;
+    pointer-events: none;
+    background: radial-gradient(circle, var(--tor-accent), transparent 70%);
+  }
+
+  .card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 16px 64px rgba(26, 92, 58, 0.75), 0 0 60px rgba(106, 171, 122, 0.2);
+  }
+  .card:active { transform: scale(0.98); }
+
+  .card-name {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 3rem;
+    font-weight: 100;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    text-align: center;
+    color: #a8d4a8;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-tagline {
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: center;
+    overflow: hidden;
+    transition: opacity 0.35s ease, max-height 0.35s ease;
+    max-height: 2rem;
+  }
+
+  .horoscope-area {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, margin-top 0.4s ease;
+    margin-top: 0;
+  }
+
+  .horoscope-area.visible {
+    max-height: 800px;
+    opacity: 1;
+    margin-top: 1.75rem;
+  }
+
+  .horoscope-inner {
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .horoscope-text {
+    font-size: 1.15rem;
+    line-height: 1.9;
+    color: var(--text-main);
+    font-weight: 300;
+    text-align: center;
+  }
+
+  .fortune {
+    margin-top: 1.4rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 10px;
+    background: rgba(232, 201, 122, 0.07);
+    border: 1px solid rgba(232, 201, 122, 0.18);
+    text-align: center;
+  }
+
+  .fortune-label {
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    display: block;
+    margin-bottom: 0.35rem;
+    opacity: 0.8;
+  }
+
+  .fortune-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--gold-light);
+    line-height: 1.6;
+    opacity: 0.85;
+  }
+
+  .twin-intel {
+    display: none;
+    margin-top: 1.5rem;
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    background: rgba(106, 171, 122, 0.1);
+    border: 1px solid rgba(106, 171, 122, 0.22);
+    font-size: 0.95rem;
+    font-style: italic;
+    color: #a8d4a8;
+    line-height: 1.7;
+    text-align: center;
+  }
+
+  .twin-intel.show {
+    display: block !important;
+    animation: pulseIn 0.5s cubic-bezier(.22,.68,0,1.3) both;
+  }
+
+  @keyframes pulseIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .twin-label {
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    opacity: 0.65;
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .sparkle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999;
+    border-radius: 50%;
+    animation: sparkleAnim 0.8s ease-out forwards;
+  }
+  @keyframes sparkleAnim {
+    0%   { opacity: 1; transform: scale(1) translate(0,0); }
+    100% { opacity: 0; transform: scale(0) translate(var(--dx), var(--dy)); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div class="page">
+
+  <div class="date-label" id="date-label"></div>
+
+  <div class="card" id="card-tor" onclick="toggleCard(this, event)">
+    <div class="card-deco"></div>
+    <div class="card-name">Tor</div>
+    <div class="card-tagline" id="tagline">See what the universe has in store for you today</div>
+    <div class="horoscope-area" id="horo-tor">
+      <div class="horoscope-inner">
+        <p class="horoscope-text" id="horo-tor-text"></p>
+        <div class="fortune" id="fortune-tor">
+          <span class="fortune-label">today's counsel</span>
+          <span class="fortune-text" id="fortune-tor-text"></span>
+        </div>
+        <div class="twin-intel" id="intel-tor">
+          <span class="twin-label">⚡ Twin intelligence report</span>
+          <span id="intel-tor-text"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Austin TX date helpers
+function getAustinDateParts() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date());
+  return {
+    year:  parseInt(parts.find(p => p.type === 'year').value),
+    month: parseInt(parts.find(p => p.type === 'month').value),
+    day:   parseInt(parts.find(p => p.type === 'day').value)
+  };
+}
+function getDayOfYear(y, m, d) {
+  return Math.round((new Date(y, m-1, d) - new Date(y, 0, 1)) / 86400000);
+}
+document.getElementById('date-label').textContent = new Date().toLocaleDateString('en-US', {
+  timeZone: 'America/Chicago', month: 'long', day: 'numeric', year: 'numeric'
+});
+
+// Seeded RNG
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+    s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+    s ^= (s >>> 16);
+    return (s >>> 0) / 0x100000000;
+  };
+}
+function seededShuffle(n, seed) {
+  const arr = Array.from({length: n}, (_, i) => i);
+  const rng = makeRng(seed);
+  for (let i = n-1; i > 0; i--) {
+    const j = Math.floor(rng() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// 15 x 15 x 15 = 3,375 unique horoscope combinations
+const partA = [
+  "You are one of those rare people who makes the world more beautiful simply by existing in it, my perfect baby angel.",
+  "There is a power in you today that is entirely your own- hard-earned, deeply felt, and radiating outward without effort.",
+  "The universe has been quietly celebrating you, and today that energy is especially close to the surface.",
+  "Something in the air today is particularly attuned to your frequency.",
+  "You carry a warmth that changes rooms- people feel it before you even speak.",
+  "Today belongs to you in a way that's hard to articulate but very easy to feel.",
+  "You radiate something most people spend lifetimes chasing, and you do it without even trying.",
+  "Your presence is one of the most valuable things in the lives of the people around you- whether they say it or not.",
+  "There's a quiet strength in you that never fully announces itself, which is exactly what makes it so powerful.",
+  "You were built for creative things- the kind of person whose hands and mind are always working on something worth making.",
+  "The energy around you today is fertile ground for everything you love most, my perfect baby angel.",
+  "Something in today's alignment is calling out to the most expressive, luminous version of you.",
+  "The universe has arranged today specifically with your gifts in mind.",
+  "You are luminous in ways you don't always see in yourself, but today the light is hard to miss.",
+  "The stars are paying particularly close attention to you today- and what they see, they like."
+];
+const partB = [
+  "Play some piano today. It will help you more than you know- your hands remember things your conscious mind forgets.",
+  "Pick up a brush or a pencil at some point. Art doesn't have to mean anything. Let it just be yours.",
+  "If someone asks for a tarot reading, say yes. What moves through you for others has a way of finding its way back.",
+  "It might be a good time to build something- start fresh, or breathe new life into something old that could use a loving hand.",
+  "Get outside if you can. Volleyball, skates, open air- your body knows things your mind is still working out.",
+  "Take some time for yourself today without justifying it to anyone. You don't need a reason to recharge.",
+  "Pay attention to what pulls your focus today- not what you think should, but what actually does. That's information worth having.",
+  "Let yourself be fully present in at least one conversation today. Don't half-listen. The whole thing is worth hearing.",
+  "Something you've been putting off is lighter than it feels. Today is a reasonable day to begin.",
+  "Notice what makes you feel most like yourself today and lean into it without overthinking.",
+  "Give yourself permission to not have it all figured out. Uncertainty and capability can coexist.",
+  "Let someone do something for you today without deflecting or minimizing it. You're allowed to receive.",
+  "If something has been sitting unfinished, even five minutes of attention can shift how it feels.",
+  "Follow one thread of curiosity today all the way to the end- wherever it goes.",
+  "Your energy is a resource. Be intentional today about where it actually goes."
+];
+const partC = [
+  "You deserve every good thing that is already on its way to you, my perfect baby angel.",
+  "The people in your life are quietly lucky, and most of them know it.",
+  "Trust yourself today. Your instincts are finely tuned and rarely wrong.",
+  "Everything you've been working toward is already in motion.",
+  "You are more seen and more loved than today may feel.",
+  "Your light doesn't dim. Even on the quiet days, it's there.",
+  "The universe is not finished with you- not even close.",
+  "Let today be easy. You've already proven enough.",
+  "Something wonderful is closer than it appears, my perfect baby angel.",
+  "What you put into the world comes back to you. Today is no different.",
+  "You are exactly where you're supposed to be.",
+  "The best things about you are the ones you haven't fully named yet.",
+  "Keep going. The stars are paying attention and they're rooting for you.",
+  "Today is yours- all of it.",
+  "You are more powerful than you know, and the universe would like you to act accordingly."
+];
+
+const intelMessages = [
+  "Keep an eye on Vanessa today- mischief is brewing, and the energy is suspiciously cheerful.",
+  "Cosmic heads-up: Vanessa is plotting something. The stars picked up unusual scheming frequencies this morning. Stay alert.",
+  "Twin forecast: Vanessa is in her most chaotic era right now. This is either very exciting or a mild catastrophe. Possibly both.",
+  "Something in the planetary alignment indicates Vanessa woke up and chose chaos today. Consider yourself officially warned.",
+  "The universe would like you to know that Vanessa's mischief index is at a seasonal high. Keep your wits sharp and your snacks closer.",
+  "Vanessa has that energy today- the kind where she already knows something you don't, and she's enjoying that very much.",
+  "The stars flagged some suspicious twin activity coming from Vanessa's direction. She's up to something. It's probably going to be funny. For her.",
+  "Today's advisory: Vanessa is feeling herself. Proceed with affection and mild caution."
+];
+
+// Daily selection- unique every day for 365 days, reshuffles each new year
+const { year, month, day } = getAustinDateParts();
+const doy = getDayOfYear(year, month, day);
+
+const nA = partA.length, nB = partB.length, nC = partC.length;
+const nCombos = nA * nB * nC; // 3,375
+
+const horoShuffle  = seededShuffle(nCombos, year * 31337);
+const intelShuffle = seededShuffle(intelMessages.length, year * 99991);
+
+const comboIdx  = horoShuffle[doy % horoShuffle.length];
+const ai        = comboIdx % nA;
+const bi        = Math.floor(comboIdx / nA) % nB;
+const ci        = Math.floor(comboIdx / (nA * nB)) % nC;
+
+const dailyHoro  = partA[ai] + ' ' + partB[bi] + ' ' + partC[ci];
+const fortunes = [
+  "Be wary of: starting a new project before finishing the last one. Your hands are ambitious but the hours are finite.",
+  "Watch out for: the idea that arrives right before you fall asleep. Write it down or it will haunt you.",
+  "Be wary of: anyone who doesn't notice the details. You always do, and that gap will eventually matter.",
+  "Watch out for: giving your best energy away before saving some for yourself.",
+  "Be wary of: the song that gets stuck in your head today. It has something to tell you.",
+  "Watch out for: a conversation that starts casually and ends up meaning a lot more than expected.",
+  "Be wary of: underestimating how much your presence actually changes a room.",
+  "Watch out for: the urge to explain yourself to someone who has already made up their mind.",
+  "Be wary of: skipping the thing that restores you. Rest is not a reward- it's part of the work.",
+  "Watch out for: a creative impulse that seems too small to act on. Those are usually the ones worth following.",
+  "Be wary of: the familiar path today. Something just slightly off-route has your name on it.",
+  "Watch out for: saying yes when your whole body is saying not right now.",
+  "Be wary of: anyone who needs you to be smaller so they can feel bigger.",
+  "Watch out for: the moment today where you almost talk yourself out of something good.",
+  "Be wary of: mistaking busyness for progress. Sometimes the best move is to slow down and think.",
+  "Watch out for: a door that's been slightly open for a while now. Today might be the day to walk through it.",
+  "Be wary of: the second-guess. Your first instinct today is worth listening to.",
+  "Watch out for: holding onto something that has already finished being useful.",
+  "Be wary of: the afternoon slump- it's a trap. Put something creative on in the background and push through.",
+  "Watch out for: anyone who asks for your energy without ever replenishing it."
+];
+
+const fortuneShuffle = seededShuffle(fortunes.length, year * 77777 + 42);
+const dailyFortune   = fortunes[fortuneShuffle[doy % fortuneShuffle.length]];
+
+const showIntel  = true;
+const dailyIntel = intelMessages[intelShuffle[doy % intelMessages.length]];
+
+// Toggle
+let isOpen = false;
+let intelTimer = null;
+
+function toggleCard(cardEl, event) {
+  if (event) event.stopPropagation();
+  const area    = document.getElementById('horo-tor');
+  const tagline = document.getElementById('tagline');
+  const intel   = document.getElementById('intel-tor');
+  if (!isOpen) {
+    document.getElementById('horo-tor-text').textContent = dailyHoro;
+    document.getElementById('fortune-tor-text').textContent = dailyFortune;
+    intel.classList.remove('show');
+    if (showIntel) {
+      document.getElementById('intel-tor-text').textContent = dailyIntel;
+      intelTimer = setTimeout(() => intel.classList.add('show'), 400);
+    }
+    area.classList.add('visible');
+    tagline.style.opacity   = '0';
+    tagline.style.maxHeight = '0';
+    spawnSparkles(cardEl);
+    isOpen = true;
+  } else {
+    if (intelTimer) { clearTimeout(intelTimer); intelTimer = null; }
+    area.classList.remove('visible');
+    intel.classList.remove('show');
+    tagline.style.opacity   = '1';
+    tagline.style.maxHeight = '2rem';
+    isOpen = false;
+  }
+}
+
+// Sparkles
+function spawnSparkles(el) {
+  const rect   = el.getBoundingClientRect();
+  const cx     = rect.left + rect.width / 2;
+  const cy     = rect.top  + rect.height / 2;
+  const colors = ['#a8d4a8','#e8c97a','#6aab7a','#c8e8c0','#4a8a5a'];
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    const size  = 4 + Math.random() * 7;
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 50 + Math.random() * 100;
+    s.style.cssText = `left:${cx-size/2}px;top:${cy-size/2}px;width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;animation-duration:${0.5+Math.random()*0.5}s;`;
+    document.body.appendChild(s);
+    s.addEventListener('animationend', () => s.remove());
+  }
+}
+
+// Starfield
+(function() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [], W, H;
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = Math.max(window.innerHeight, document.body.scrollHeight);
+  }
+  function initStars() {
+    stars = [];
+    const count = Math.floor((W * H) / 4800);
+    for (let i = 0; i < count; i++) {
+      stars.push({x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.5,
+        alpha: 0.2+Math.random()*0.7, speed: 0.003+Math.random()*0.008, phase: Math.random()*Math.PI*2});
+    }
+  }
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    frame++;
+    for (const s of stars) {
+      const a = s.alpha * (0.6 + 0.4 * Math.sin(s.phase + frame * s.speed));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(245,228,176,${a})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', () => { resize(); initStars(); });
+  resize(); initStars(); draw();
+})();
+</script>
+</body>
+</html>
